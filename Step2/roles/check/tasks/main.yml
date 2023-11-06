@@ -1,0 +1,12 @@
+---
+
+  - name: ### State Checker ###
+    command: python /ansible/ATX/scripts/state_checker_{{show_state}}.py
+    register: state_checker
+
+  - name: ### State Checker ###
+    local_action:
+      copy content="{{ state_checker.stdout }}" dest=/ansible/ATX/state_checker_{{ show_state }}.log
+
+
+

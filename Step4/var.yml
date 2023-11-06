@@ -1,0 +1,20 @@
+tenant: dCloud
+ap: AP
+vrf: VRF1
+bds:
+- bd: BD_web
+  gateway: 192.168.1.1
+  mask: 24
+- bd: BD_ap
+  gateway: 192.168.2.1
+  mask: 24
+- bd: BD_db
+  gateway: 192.168.3.1
+  mask: 24
+epgs:
+- bd: BD_web
+  epg: EPG_web
+- bd: BD_ap
+  epg: EPG_ap
+- bd: BD_db
+  epg: EPG_db

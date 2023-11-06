@@ -1,0 +1,19 @@
+---
+  - name: Log TASK 05 - show command 
+    cisco.nxos.nxos_command:
+      commands: 
+      - show ip route vrf all
+      - show vlan extended
+    register: show_command
+
+
+  - name: Log TASK 06 -01 - save ip route log
+    copy:
+      content: "{{ show_command.stdout[0] }}" 
+      dest: /ansible/ATX/{{ inventory_hostname }}_show_ip_route_{{ show_state }}.log
+
+
+  - name: Log TASK 06 -02 - save vlan extended log
+    copy:
+      content: "{{ show_command.stdout[1] }}" 
+      dest: /ansible/ATX/{{ inventory_hostname }}_show_vlan_extended_{{ show_state }}.log

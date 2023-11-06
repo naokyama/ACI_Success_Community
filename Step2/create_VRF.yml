@@ -1,0 +1,32 @@
+---
+- name:               Build APIC Configuration from Scratch
+  hosts:              apic
+  connection:         local
+  gather_facts:       no
+  vars:
+    shared_vars:
+      descr:                    "Created by Ansible"
+    tenant: dCloud
+    vrf: VRF1
+
+
+  tasks:
+  - name: TASK 01 - Create Tenant
+    aci_tenant:
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: no
+      tenant: "{{ tenant }}"
+      state: present
+
+  - name: TASK 02 - Create VRF
+    aci_vrf:
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: no
+      tenant: "{{ tenant }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"

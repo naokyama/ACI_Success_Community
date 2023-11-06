@@ -1,0 +1,48 @@
+---
+- name:               Build APIC Configuration from Scratch
+  hosts:              apic
+  connection:         local
+  gather_facts:       no
+  vars:
+    apic_info:        &apic_info
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: no
+    shared_vars:
+      descr:                    "Created by Ansible"
+
+  tasks:
+  - name: TASK 01 - Create Tenant
+    aci_tenant:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      state: present
+
+  - name: TASK 02 - Create VRF
+    aci_vrf:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+
+  - name: TASK 03 - Create BRIDGE DOMAIN
+    aci_bd:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      bd: "{{ item.bd }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+    with_items: "{{ bds }}"
+
+  - name: TASK 04 - Create BRIDGE DOMAIN SUBNET
+    aci_bd_subnet:
+      <<: *apic_info
+      state: "present"
+      tenant: "{{ tenant }}"
+      bd: "{{ item.bd }}"
+      gateway: "{{ item.gateway }}"
+      mask: "{{ item.mask }}"
+    with_items: "{{ bds }}"

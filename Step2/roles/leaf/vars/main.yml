@@ -1,0 +1,3 @@
+cli:
+  authorize: yes
+  transport: cli
