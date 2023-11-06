@@ -6,14 +6,14 @@
   vars:
     shared_vars:
       descr:                    "Created by Ansible"
-    tenant: Demo
+    tenant: dCloud
 
   tasks:
-  - name: Create Tenant
+  - name: TASK 01 - Create Tenant
     aci_tenant:
       host: "{{ ansible_host }}"
       username: "{{ ansible_user }}"
       password: "{{ ansible_ssh_pass }}"
       validate_certs: no
-      tenant: "{{tenant}}"
+      tenant: "{{ tenant }}"
       state: present
