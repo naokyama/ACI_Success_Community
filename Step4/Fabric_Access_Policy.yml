@@ -1,0 +1,406 @@
+---
+- name:               Build APIC Configuration from Scratch
+  hosts:              apic
+  connection:         local
+  gather_facts:       no
+  vars:
+    apic_info:        &apic_info
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: no
+    shared_vars:
+      descr:                    "Created by Ansible"
+
+  tasks:
+  - name: TASK 01 - Create Tenant
+    aci_tenant:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      state: present
+
+  - name: TASK 02 - Create VRF
+    aci_vrf:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+
+  - name: TASK 03 - Create BRIDGE DOMAIN
+    aci_bd:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      bd: "{{ item.bd }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+    with_items: "{{ bds }}"
+
+  - name: TASK 04 - Create BRIDGE DOMAIN SUBNET
+    aci_bd_subnet:
+      <<: *apic_info
+      state: "present"
+      tenant: "{{ tenant }}"
+      bd: "{{ item.bd }}"
+      gateway: "{{ item.gateway }}"
+      mask: "{{ item.mask }}"
+    with_items: "{{ bds }}"
+
+  - name: Create APPLICATION PROFILE
+    aci_ap:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      ap: "{{ ap }}"
+      state: present
+
+  - name: Create EPG
+    aci_epg:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      ap: "{{ ap }}"
+      epg: "{{ item.epg }}"
+      bd: "{{ item.bd }}"
+      description: "{{ shared_vars.descr }}"
+      state: present
+    with_items: "{{ epgs }}"
+
+
+  - name: Pre1 - Create VLAN Pools
+    aci_vlan_pool:
+      <<: *apic_info
+      pool: "{{ vlan_pools.vlanName }}"
+      pool_allocation_mode: "{{ vlan_pools.allocMode }}"
+      description: "{{ vlan_pools.description }}"
+      state: present
+
+  - name: Pre2 - Assign VLAN encap blocks
+    aci_vlan_pool_encap_block::
+      <<: *apic_info
+      pool: "{{ vlan_pools.vlanName }}"
+      pool_allocation_mode: "{{ vlan_pools.allocMode }}"
+      block_start: "{{ vlan_pools.vlanFrom }}"
+      block_end: "{{ vlan_pools.vlanTo }}"
+      state: present
+
+  - name: Pre3 - Create Physical Domain
+    aci_domain:
+      <<: *apic_info
+      domain: "{{ phys_dom.physDomName }}"
+      domain_type: phys
+      state: present
+
+  - name: Pre4 - Bind a physical domain to VLAN pool
+    aci_domain_to_vlan_pool:
+      <<: *apic_info
+      domain: "{{ phys_dom.physDomName }}"
+      domain_type: phys
+      pool: "{{ vlan_pools.vlanName }}"
+      pool_allocation_mode: "{{ vlan_pools.allocMode }}"
+      state: present
+
+  - name: Pre5 - Create Attachable Access Entity Profile
+    aci_aep:
+      <<: *apic_info
+      aep: "{{ aaep.aaepName }}"
+      infra_vlan: true
+      state: present
+
+  - name: Pre6 - Add AEP to domain binding
+    aci_aep_to_domain: 
+      <<: *apic_info
+      aep: "{{ aaep.aaepName }}"
+      domain: "{{ phys_dom.physDomName }}"
+      domain_type: physf
+      state: present
+
+  - name: Pre7 - Create a Leaf Access Port Policy Group
+    aci_interface_policy_leaf_policy_group:
+      <<: *apic_info
+      lag_type: leaf
+      policy_group: "{{ item }}"
+#      link_level_policy: "{{  }}"
+      state: present
+    with_items: "{{ intf_policies }}"
+
+  - name: Pre8 - Add a new leaf_interface_profile
+    aci_interface_policy_leaf_profile:
+      <<: *apic_info
+      interface_profile: leafintprfname
+      description:  leafintprfname description
+      state: present
+
+  - name: Task 1 - Interface Profile
+    cisco.aci.aci_access_port_to_interface_policy_leaf_profile:
+      host: "{{ ansible_host }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      state: "present"
+      validate_certs: False
+      interface_profile: "{{ item.leafintprfname }}"
+      access_port_selector: "{{ item.ccessportselectorname }}"
+      port_blk: "{{ item.leafportblkname }}"
+      from_port: "{{ item.interface }}"
+      to_port: "{{ item.interface }}"
+      policy_group: "{{ item.policygroupname }}"
+    with_items: "{{ accessport }}" 
+
+
+  - name:             Create Interface Policy Groups
+    aci_rest:
+      <<: *apic_info
+      validate_certs: no
+      use_proxy:      no
+      path:           /api/mo/.json
+      method:         post
+      content:
+        infraAccPortGrp:
+          attributes:
+            dn: uni/infra/funcprof/accportgrp-{{item}}
+            name: "{{item}}"
+            descr: "{{shared_vars.descr}}"
+            rn: accportgrp-{{item}}
+            status: created,modified
+          children:
+          - infraRsAttEntP:
+              attributes:
+                tDn: uni/infra/attentp-{{aaep.aaepName}}
+                status: created,modified
+              children: []
+          - infraRsCdpIfPol:
+              attributes:
+                tnCdpIfPolName: "{{cdp_policy.cdpPolicyName}}"
+                status: created,modified
+              children: []
+    with_items:
+      "{{intf_policies}}"
+
+  # Create Interface Policy Leaf Profiles
+  - name:             Create Interface Policy Leaf Profiles
+    aci_rest:
+      <<: *apic_info
+      validate_certs: no
+      use_proxy:      no
+      path:           /api/mo/.json
+      method:         post
+      content:
+        infraAccPortP:
+          attributes:
+            annotation: ''
+            descr: "{{shared_vars.descr}}"
+            dn: uni/infra/accportprof-{{item}}
+            name: "{{item}}"
+            nameAlias: ''
+            ownerKey: ''
+            ownerTag: ''
+            status: created,modified
+    with_items:
+      "{{ifPolicyLeafProfileNames}}"
+    loop_control:
+      pause: .5
+
+  # Create Interface Selectors
+  - name:             Create Interface Selectors
+    aci_rest:
+      <<: *apic_info
+      validate_certs: no
+      use_proxy:      no
+      path:           /api/mo/.json
+      method:         post
+      content:
+        infraHPortS:
+          attributes:
+            annotation: ''
+            descr: ''
+            dn: uni/infra/accportprof-{{item.ifPolicyLeafProfileName}}/hports-interfaces-typ-range
+            name: interfaces
+            nameAlias: ''
+            ownerKey: ''
+            ownerTag: ''
+            type: range
+            status: created,modified
+          children:
+          - infraRsAccBaseGrp:
+              attributes:
+                annotation: ''
+                fexId: '101'
+                tDn: uni/infra/funcprof/accportgrp-{{item.intf_policy}}
+          - infraPortBlk:
+              attributes:
+                annotation: ''
+                descr: ''
+                fromCard: "{{item.fromCard}}"
+                fromPort: "{{item.fromPort}}"
+                name: block2
+                nameAlias: ''
+                toCard: "{{item.toCard}}"
+                toPort: "{{item.toPort}}"
+    with_items:
+      "{{interfaceSelectors}}"
+    loop_control:
+      pause: .5
+
+  # Create Switch Policy Leaf Profiles
+  - name:             Create Switch Policy Leaf Profiles
+    aci_rest:
+      <<: *apic_info
+      validate_certs: no
+      use_proxy:      no
+      path:           /api/mo/.json
+      method:         post
+      content:
+        infraNodeP:
+          attributes:
+            annotation: ''
+            descr: "{{shared_vars.descr}}"
+            dn: uni/infra/nprof-{{item.swPolicyLeafProfileName}}
+            name: "{{item.swPolicyLeafProfileName}}"
+            nameAlias: ''
+            ownerKey: ''
+            ownerTag: ''
+            status: created,modified
+          children:
+          - infraRsAccPortP:
+              attributes:
+                annotation: ''
+                tDn: uni/infra/accportprof-{{item.swPolicyLeafProfileName}}
+          - infraLeafS:
+              attributes:
+                annotation: ''
+                descr: "{{shared_vars.descr}}"
+                name: "{{item.leafName}}"
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                type: range
+              children:
+              - infraNodeBlk:
+                  attributes:
+                    annotation: ''
+                    descr: "{{shared_vars.descr}}"
+                    from_: "{{item.leafId}}"
+                    name: ae13e494071b4fda
+                    nameAlias: ''
+                    to_: "{{item.leafId}}"
+    with_items:
+      "{{swPolicyLeafProfiles}}"
+    loop_control:
+      pause: .5
+
+  - name: Create a New VRF
+    aci_vrf:
+      <<: *apic_info
+      validate_certs: no
+      vrf: "{{item.vrfName}}"
+      tenant: "{{item.tenantName}}"
+      policy_control_preference: enforced
+      policy_control_direction: ingress
+      state: present
+    with_items:
+      "{{vrfs}}"
+    loop_control:
+      pause: .5
+
+  - name: Add Bridge Domain
+    aci_bd:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      bd: "{{item.bdName}}"
+      vrf: "{{item.vrfName}}"
+      state: present
+    with_items:
+      "{{bridgeDomains}}"
+    loop_control:
+      pause: .5
+
+  - name: Create BD Subnet(s)
+    aci_bd_subnet:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      bd: "{{item.bdName}}"
+      gateway: "{{item.gwAddress}}"
+      mask: "{{item.mask}}"
+      state: present
+    with_items:
+      "{{bdSubnets}}"
+    loop_control:
+      pause: .5
+
+  - name: Create New Tenant(s)
+    aci_tenant:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      state: present
+    with_items:
+      "{{tenants}}"
+    loop_control:
+      pause: .5
+
+  - name: Create a New App Profile
+    aci_ap:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      ap: "{{item.apName}}"
+      state: present
+    with_items:
+      "{{appProfiles}}"
+    loop_control:
+      pause: .5
+
+  - name: Create a New EPG
+    aci_epg:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      ap: "{{item.apName}}"
+      epg: "{{item.epgName}}"
+      bd: "{{item.bdName}}"
+      state: present
+    with_items:
+      "{{epgs}}"
+    loop_control:
+      pause: .5
+
+  - name: Add a new physical domain to EPG binding
+    aci_epg_to_domain:
+      <<: *apic_info
+      validate_certs: no
+      tenant: "{{item.tenantName}}"
+      ap: "{{item.apName}}"
+      epg: "{{item.epgName}}"
+      domain: "{{phys_dom.physDomName}}"
+      domain_type: phys
+      state: present
+    with_items:
+      "{{epgs}}"
+    loop_control:
+      pause: .5
+
+  # Create Static Ports
+  - name:             Create Static Ports
+    aci_rest:
+      <<: *apic_info
+      validate_certs: no
+      use_proxy:      no
+      path:           /api/mo/.json
+      method:         post
+      content:
+        fvRsPathAtt:
+          attributes:
+            annotation: ''
+            descr: ''
+            dn: uni/tn-{{item.tenantName}}/ap-{{item.apName}}/epg-{{item.epgName}}/rspathAtt-[topology/pod-1/paths-{{item.nodeID}}/pathep-[{{item.path}}]]
+            encap: vlan-{{item.vlanID}}
+            instrImedcy: immediate
+            mode: regular
+            primaryEncap: unknown
+            tDn: topology/pod-1/paths-{{item.nodeID}}/pathep-[{{item.path}}]
+            status: created,modified
+    with_items:
+      "{{staticPorts}}"
+    loop_control:
+      pause: .5

@@ -1,5 +1,4 @@
 tenant: dCloud
-ap: AP
 vrf: VRF1
 bds:
 - bd: BD_web
@@ -11,6 +10,8 @@ bds:
 - bd: BD_db
   gateway: 192.168.3.1
   mask: 24
+
+ap: AP
 epgs:
 - bd: BD_web
   epg: EPG_web
@@ -18,3 +19,98 @@ epgs:
   epg: EPG_ap
 - bd: BD_db
   epg: EPG_db
+
+staticPorts:
+- nodeID: 101
+  path: eth1/11
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+- nodeID: 101
+  path: eth1/12
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+- nodeID: 101
+  path: eth1/13
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+
+vlan_pools:
+  allocMode: "static"
+  vlanName: "all_vlans"
+  vlanFrom: 2000
+  vlanTo: 2501
+  description: "Production VLANs"
+
+phys_dom:
+  physDomName:              "physical_servers"
+
+aaep:
+  aaepName:                 "all_vlans"
+
+intf_policies:
+- "ESX_Hosts"
+- "Linux_Hosts"
+- "Windows_Hosts"
+
+ifPolicyLeafProfileNames:
+- Leaf_101
+- Leaf_102
+- Leaf_103
+- Leaf_104
+- Leaf_105
+- Leaf_106
+- Leafs_101_and_102
+- Leafs_103_and_104
+- Leafs_105_and_106
+
+interfaceSelectors:
+- ifPolicyLeafProfileName: Leafs_101_and_102
+  intf_policy: Linux_Hosts
+  fromCard: '1'
+  fromPort: '1'
+  toCard: '1'
+  toPort: '48'
+
+swPolicyLeafProfiles:
+- swPolicyLeafProfileName: Leaf_101
+  leafName: Leaf-101
+  leafId: '101'
+- swPolicyLeafProfileName: Leaf_102
+  leafName: Leaf-102
+  leafId: '102'
+- swPolicyLeafProfileName: Leaf_103
+  leafName: Leaf-103
+  leafId: '103'
+- swPolicyLeafProfileName: Leaf_104
+  leafName: Leaf-104
+  leafId: '104'
+- swPolicyLeafProfileName: Leaf_105
+  leafName: Leaf-105
+  leafId: '105'
+- swPolicyLeafProfileName: Leaf_106
+  leafName: Leaf-106
+  leafId: '106'
+- swPolicyLeafProfileName: Leafs_101_and_102
+  leafName: Leaf-101
+  leafId: '101'
+- swPolicyLeafProfileName: Leafs_101_and_102
+  leafName: Leaf-102
+  leafId: '102'
+- swPolicyLeafProfileName: Leafs_103_and_104
+  leafName: Leaf-103
+  leafId: '103'
+- swPolicyLeafProfileName: Leafs_103_and_104
+  leafName: Leaf-104
+  leafId: '104'
+- swPolicyLeafProfileName: Leafs_105_and_106
+  leafName: Leaf-105
+  leafId: '105'
+- swPolicyLeafProfileName: Leafs_105_and_106
+  leafName: Leaf-106
+  leafId: '106'
