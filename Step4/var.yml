@@ -20,29 +20,85 @@ epgs:
 - bd: BD_db
   epg: EPG_db
 
+epgDomain:
+- epg: EPG_web
+  domain: physical_servers
+- epg: EPG_ap
+  domain: physical_servers
+- epg: EPG_db
+  domain: physical_servers
+
 staticPorts:
 - nodeID: 101
-  path: eth1/11
+  path: eth1/1
   vlanID: 2011
   tenantName: dCloud
   apName: AP
   epgName: EPG_web
+  pod: 1
 - nodeID: 101
-  path: eth1/12
+  path: eth1/2
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+  pod: 1
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+  pod: 1
+- nodeID: 101
+  path: eth1/1
   vlanID: 2012
   tenantName: dCloud
   apName: AP
   epgName: EPG_ap
+  pod: 1
 - nodeID: 101
-  path: eth1/13
+  path: eth1/2
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+  pod: 1
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+  pod: 1
+- nodeID: 101
+  path: eth1/1
   vlanID: 2013
   tenantName: dCloud
   apName: AP
   epgName: EPG_db
+  pod: 1
+- nodeID: 101
+  path: eth1/2
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+  pod: 1
+
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+  pod: 1
+
 
 vlan_pools:
   allocMode: "static"
   vlanName: "all_vlans"
+  blockName: "production"
   vlanFrom: 2000
   vlanTo: 2501
   description: "Production VLANs"
@@ -54,9 +110,12 @@ aaep:
   aaepName:                 "all_vlans"
 
 intf_policies:
-- "ESX_Hosts"
-- "Linux_Hosts"
-- "Windows_Hosts"
+- PolName: "ESX_Hosts"
+  AEP : "all_vlans"
+- PolName: "Linux_Hosts"
+  AEP : "all_vlans"
+- PolName: "Windows_Hosts"
+  AEP : "all_vlans"
 
 ifPolicyLeafProfileNames:
 - Leaf_101
@@ -70,12 +129,15 @@ ifPolicyLeafProfileNames:
 - Leafs_105_and_106
 
 interfaceSelectors:
-- ifPolicyLeafProfileName: Leafs_101_and_102
+  ifPolicyLeafProfileName: Leafs_101_and_102
+  description: for_Linux_Hosts
+  accessPortSelector: Port1_48
   intf_policy: Linux_Hosts
-  fromCard: '1'
-  fromPort: '1'
-  toCard: '1'
-  toPort: '48'
+  blockName: 1_48
+  fromPort: "1"
+  fromCard: "1"
+  toPort: "48"
+  toCard: "1"
 
 swPolicyLeafProfiles:
 - swPolicyLeafProfileName: Leaf_101
@@ -114,3 +176,7 @@ swPolicyLeafProfiles:
 - swPolicyLeafProfileName: Leafs_105_and_106
   leafName: Leaf-106
   leafId: '106'
+
+LeafProfileInterfaceSelectors:
+- swPolicyLeafProfileName: Leafs_101_and_102
+  intProfileName: Leafs_101_and_102
