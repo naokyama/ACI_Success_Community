@@ -1,0 +1,52 @@
+---
+- name:               Build APIC Configuration from Scratch
+  hosts:              apic
+  connection:         local
+  gather_facts:       no
+  vars:
+    apic_info:        &apic_info
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: no
+    shared_vars:
+      descr:                    "Created by Ansible"
+
+  tasks:
+  - name: TASK 01 - Query Tenant
+    aci_tenant:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      state: present
+    register: tenant_info
+
+  - name: Log TASK 01-2 - save tenant
+    local_action: copy content={{ tenant_info }}  dest=/home/demouser/tenant.json
+
+
+  - name: TASK 02 - Query VRF
+    aci_vrf:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+    register: vrf_info
+
+  - name: Log TASK 02-2 - save vrf
+    local_action: copy content={{ vrf_info }}  dest=/home/demouser/vrf.json
+
+
+  - name: TASK 03 - Query BRIDGE DOMAIN
+    aci_bd:
+      <<: *apic_info
+      tenant: "{{ tenant }}"
+      bd: "{{ item.bd }}"
+      vrf: "{{ vrf }}"
+      description: "{{ shared_vars.descr }}"
+      state: "present"
+    with_items: "{{ bds }}"
+    register: bd_info
+
+  - name: Log TASK 03-2 - save bd
+    local_action: copy content={{ bd_info }}  dest=/home/demouser/bd.json

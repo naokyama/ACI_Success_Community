@@ -1,0 +1,182 @@
+tenant: dCloud
+vrf: VRF1
+bds:
+- bd: BD_web
+  gateway: 192.168.1.1
+  mask: 24
+- bd: BD_ap
+  gateway: 192.168.2.1
+  mask: 24
+- bd: BD_db
+  gateway: 192.168.3.1
+  mask: 24
+
+ap: AP
+epgs:
+- bd: BD_web
+  epg: EPG_web
+- bd: BD_ap
+  epg: EPG_ap
+- bd: BD_db
+  epg: EPG_db
+
+epgDomain:
+- epg: EPG_web
+  domain: physical_servers
+- epg: EPG_ap
+  domain: physical_servers
+- epg: EPG_db
+  domain: physical_servers
+
+staticPorts:
+- nodeID: 101
+  path: eth1/1
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+  pod: 1
+- nodeID: 101
+  path: eth1/2
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+  pod: 1
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2011
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_web
+  pod: 1
+- nodeID: 101
+  path: eth1/1
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+  pod: 1
+- nodeID: 101
+  path: eth1/2
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+  pod: 1
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2012
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_ap
+  pod: 1
+- nodeID: 101
+  path: eth1/1
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+  pod: 1
+- nodeID: 101
+  path: eth1/2
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+  pod: 1
+
+- nodeID: 101
+  path: eth1/3
+  vlanID: 2013
+  tenantName: dCloud
+  apName: AP
+  epgName: EPG_db
+  pod: 1
+
+
+vlan_pools:
+  allocMode: "static"
+  vlanName: "all_vlans"
+  blockName: "production"
+  vlanFrom: 2000
+  vlanTo: 2501
+  description: "Production VLANs"
+
+phys_dom:
+  physDomName:              "physical_servers"
+
+aaep:
+  aaepName:                 "all_vlans"
+
+intf_policies:
+- PolName: "ESX_Hosts"
+  AEP : "all_vlans"
+- PolName: "Linux_Hosts"
+  AEP : "all_vlans"
+- PolName: "Windows_Hosts"
+  AEP : "all_vlans"
+
+ifPolicyLeafProfileNames:
+- Leaf_101
+- Leaf_102
+- Leaf_103
+- Leaf_104
+- Leaf_105
+- Leaf_106
+- Leafs_101_and_102
+- Leafs_103_and_104
+- Leafs_105_and_106
+
+interfaceSelectors:
+  ifPolicyLeafProfileName: Leafs_101_and_102
+  description: for_Linux_Hosts
+  accessPortSelector: Port1_48
+  intf_policy: Linux_Hosts
+  blockName: 1_48
+  fromPort: "1"
+  fromCard: "1"
+  toPort: "48"
+  toCard: "1"
+
+swPolicyLeafProfiles:
+- swPolicyLeafProfileName: Leaf_101
+  leafName: Leaf-101
+  leafId: '101'
+- swPolicyLeafProfileName: Leaf_102
+  leafName: Leaf-102
+  leafId: '102'
+- swPolicyLeafProfileName: Leaf_103
+  leafName: Leaf-103
+  leafId: '103'
+- swPolicyLeafProfileName: Leaf_104
+  leafName: Leaf-104
+  leafId: '104'
+- swPolicyLeafProfileName: Leaf_105
+  leafName: Leaf-105
+  leafId: '105'
+- swPolicyLeafProfileName: Leaf_106
+  leafName: Leaf-106
+  leafId: '106'
+- swPolicyLeafProfileName: Leafs_101_and_102
+  leafName: Leaf-101
+  leafId: '101'
+- swPolicyLeafProfileName: Leafs_101_and_102
+  leafName: Leaf-102
+  leafId: '102'
+- swPolicyLeafProfileName: Leafs_103_and_104
+  leafName: Leaf-103
+  leafId: '103'
+- swPolicyLeafProfileName: Leafs_103_and_104
+  leafName: Leaf-104
+  leafId: '104'
+- swPolicyLeafProfileName: Leafs_105_and_106
+  leafName: Leaf-105
+  leafId: '105'
+- swPolicyLeafProfileName: Leafs_105_and_106
+  leafName: Leaf-106
+  leafId: '106'
+
+LeafProfileInterfaceSelectors:
+- swPolicyLeafProfileName: Leafs_101_and_102
+  intProfileName: Leafs_101_and_102
